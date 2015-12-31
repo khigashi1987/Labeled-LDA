@@ -13,11 +13,9 @@
 #include "util.h"
 #include "likelihood.h"
 
-void llda_learn(document *data, double alpha, double beta, int nclass, int nlex, int dlenmax, int maxiter, double **phi, double **theta, FILE *likp){
+void llda_learn(document *data, double alpha, double beta, int nclass, int nlex, int dlenmax, int maxiter, double **phi, double **theta, int **n_mz, int **n_zw, FILE *likp){
     document *dp;
     int ndocs;
-    int **n_mz;
-    int **n_zw;
     int *n_m;
     int *n_z;
     int ***topics;
@@ -42,16 +40,6 @@ void llda_learn(document *data, double alpha, double beta, int nclass, int nlex,
         ;
     
     // initialize buffers
-    // n_mz ... number of times document and topic z co-occur
-    if((n_mz = imatrix(ndocs, nclass)) == NULL){
-        fprintf(stderr,"llda_learn:: cannot allocate n_mz.\n");
-        return;
-    }
-    // n_zw ... number of times topic and word w co-occur
-    if((n_zw = imatrix(nclass, nlex)) == NULL){
-        fprintf(stderr,"llda_learn:: cannot allocate n_zw.\n");
-        return;
-    }
     if((n_m = calloc(ndocs,sizeof(int))) == NULL){
         fprintf(stderr,"llda_learn:: cannot allocate n_m.\n");
         return;
@@ -205,8 +193,6 @@ void llda_learn(document *data, double alpha, double beta, int nclass, int nlex,
     normalize_matrix_row(theta, temp_theta, ndocs, nclass);
     
     
-    free_imatrix(n_mz, ndocs);
-    free_imatrix(n_zw, nclass);
     free(n_m);
     free(n_z);
     free(left);

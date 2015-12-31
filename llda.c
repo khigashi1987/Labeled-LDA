@@ -10,11 +10,12 @@
 #include "writer.h"
 #include "feature.h"
 #include "dmatrix.h"
+#include "imatrix.h"
 #include "util.h"
 
 int main(int argc, char **argv){
     document *data;
-    FILE *pp, *tp, *likp; // for phi, theta, likelihood
+    FILE *pp, *tp, *n_mzp, *n_wzp, *likp; // for phi, theta, n_mz, n_zw, likelihood
     char c;
     int nlex, dlenmax;
     int ndoc;
@@ -24,6 +25,8 @@ int main(int argc, char **argv){
     double beta = BETA_DEFAULT;
     double **phi;
     double **theta;
+    int **n_mz;
+    int **n_zw;
     
     while((c = getopt(argc, argv, "I:A:B:h")) != -1){
         switch(c){
@@ -52,6 +55,8 @@ int main(int argc, char **argv){
     // open model output
     if(((pp = fopen(strconcat(argv[optind+2], ".phi"),"w")) == NULL)
     || ((tp = fopen(strconcat(argv[optind+2], ".theta"),"w")) == NULL)
+    || ((n_mzp = fopen(strconcat(argv[optind+2], ".n_mz"),"w")) == NULL)
+    || ((n_wzp = fopen(strconcat(argv[optind+2], ".n_wz"),"w")) == NULL)
     || ((likp = fopen(strconcat(argv[optind+2], ".lik"),"w")) == NULL)){
         fprintf(stderr, "llda:: cannot open model outputs.\n");
         exit(1);
@@ -66,16 +71,30 @@ int main(int argc, char **argv){
         fprintf(stderr, "llda:: cannot allocate theta.\n");
         exit(1);
     }
+    // n_mz ... number of times document and topic z co-occur
+    if((n_mz = imatrix(ndoc, nclass)) == NULL){
+        fprintf(stderr, "llda:: cannot allocate n_mz.\n");
+        exit(1);
+    }
+    // n_zw ... number of times topic and word w co-occur
+    if((n_zw = imatrix(nclass, nlex)) == NULL){
+        fprintf(stderr, "llda:: cannot allocate n_zw.\n");
+        exit(1);
+    }
     
-    llda_learn(data, alpha, beta, nclass, nlex, dlenmax, maxiter, phi, theta, likp);
-    llda_write(pp, tp, phi, theta, nclass, nlex, ndoc);
+    llda_learn(data, alpha, beta, nclass, nlex, dlenmax, maxiter, phi, theta, n_mz, n_zw, likp);
+    llda_write(pp, tp, n_mzp, n_wzp, phi, theta, n_mz, n_zw, nclass, nlex, ndoc);
     
     free_feature_matrix(data);
     free_dmatrix(phi, nlex);
     free_dmatrix(theta, ndoc);
+    free_imatrix(n_mz, ndoc);
+    free_imatrix(n_zw, nclass);
     
     fclose(pp);
     fclose(tp);
+    fclose(n_mzp);
+    fclose(n_wzp);
     
     exit(0);
 }
